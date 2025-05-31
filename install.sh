@@ -4,9 +4,8 @@ set -e
 
 REPO="Pjdeveloper896/VoltJs"
 BIN_NAME="voltjs"
-INSTALL_DIR="/usr/local/bin"
 
-# Detect OS and architecture
+# Detect OS and arch
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
 
@@ -19,7 +18,16 @@ else
   exit 1
 fi
 
-echo "Fetching latest release info from GitHub..."
+# Termux detection
+if [ "$PREFIX" != "" ]; then
+  # We are in Termux
+  INSTALL_DIR="$PREFIX/bin"
+else
+  # Default to /usr/local/bin for other Linux/macOS
+  INSTALL_DIR="/usr/local/bin"
+fi
+
+echo "Installing to $INSTALL_DIR ..."
 
 LATEST_RELEASE_JSON=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
 
@@ -48,8 +56,16 @@ curl -L -o "$TMP_FILE" "$DOWNLOAD_URL"
 
 chmod +x "$TMP_FILE"
 
-echo "Installing to $INSTALL_DIR/$BIN_NAME ..."
-sudo mv "$TMP_FILE" "$INSTALL_DIR/$BIN_NAME"
+# Move without sudo in Termux or normal user context
+mv "$TMP_FILE" "$INSTALL_DIR/$BIN_NAME"
 
-echo "Installed $BIN_NAME successfully!"
+echo "Installed $BIN_NAME successfully to $INSTALL_DIR!"
+
+# Check if INSTALL_DIR is in PATH
+if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+  echo "Warning: $INSTALL_DIR is not in your PATH."
+  echo "Add this line to your shell config (e.g. ~/.bashrc or ~/.zshrc):"
+  echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+fi
+
 echo "You can now run: $BIN_NAME --help"
